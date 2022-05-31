@@ -77,3 +77,26 @@ pub trait DeviceInfoProvider {
     /// Returns description of device state by room name and device name
     fn report(&self, room_name: &str, device_name: &str) -> String;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_devices_by_room_name() {
+        let smart_house = SmartHouse::default();
+
+        let devices = smart_house.devices("Bathroom");
+
+        assert_eq!(devices[0], "therm2");
+        assert_eq!(devices[1], "switch1");
+    }
+
+    #[test]
+    #[should_panic(expected = "Room not found")]
+    fn test_get_devices_panics_if_room_name_not_found() {
+        let smart_house = SmartHouse::default();
+
+        let _devices = smart_house.devices("Kitchen");
+    }
+}
