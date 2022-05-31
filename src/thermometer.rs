@@ -1,15 +1,9 @@
 //! Module describes thermometer device for smart house
 
 /// Describes smart thermometer
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Thermometer {
     temperature: f64,
-}
-
-impl Default for Thermometer {
-    fn default() -> Self {
-        Self { temperature: 0.0 }
-    }
 }
 
 impl Thermometer {
