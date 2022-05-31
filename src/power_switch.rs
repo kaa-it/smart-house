@@ -1,14 +1,16 @@
 //! Module describes power switch device for smart house
 
+use std::fmt::{self, Display};
+
 /// Describes state of power switch
-#[derive(Debug)]
+#[derive(Debug, Display, Clone)]
 pub enum SwitchState {
     On,
     Off,
 }
 
 /// Describes smart power switch
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PowerSwitch {
     state: SwitchState,
     description: String,
@@ -38,5 +40,15 @@ impl PowerSwitch {
     /// Returns current power consumption of the switch
     pub fn power_consumption(&self) -> f64 {
         self.power_consumption
+    }
+}
+
+impl Display for PowerSwitch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Power Switch (state: {}, description: \"{}\", power consumption: {})",
+            self.state, self.description, self.power_consumption
+        )
     }
 }
