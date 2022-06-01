@@ -19,3 +19,26 @@ impl fmt::Display for Thermometer {
         write!(f, "Thermometer (temperature: {})", self.temperature)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_thermometer() {
+        let thermometer = Thermometer::default();
+
+        assert_eq!(thermometer.temperature(), 0.0);
+    }
+
+    #[test]
+    fn test_display_thermometer() {
+        const THERMOMETER_INFO: &str = "Thermometer (temperature: 0)";
+
+        let thermometer = Thermometer::default();
+
+        let thermometer_info = format!("{}", thermometer);
+
+        assert_eq!(thermometer_info, THERMOMETER_INFO);
+    }
+}

@@ -52,3 +52,20 @@ impl Display for PowerSwitch {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_display_power_switch() {
+        const POWER_SWITCH_INFO: &str =
+            r#"Power Switch (state: Off, description: "Bathroom", power consumption: 0)"#;
+
+        let power_switch = PowerSwitch::new("Bathroom");
+
+        let power_switch_info = format!("{}", power_switch);
+
+        assert_eq!(power_switch_info, POWER_SWITCH_INFO);
+    }
+}
