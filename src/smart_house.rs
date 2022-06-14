@@ -1,5 +1,7 @@
 //! Module describes smart house
 
+use crate::errors::{self, Error::DeviceNotFoundError};
+
 /// Describes list of devices in the room
 pub type DeviceList<'a> = [&'a str; 2];
 
@@ -45,37 +47,46 @@ impl<'a> SmartHouse<'a> {
     }
 
     /// Returns names of devices for the room of smart house by room's name
-    pub fn devices(&self, room_name: &str) -> DeviceList {
+    pub fn devices(&self, room_name: &str) -> Option<DeviceList> {
         for r in &self.rooms {
             if r.name == room_name {
-                return r.devices;
+                return Some(r.devices);
             }
         }
 
-        panic!("Room not found");
+        None
     }
 
     /// Returns report about devices of the smart house
     ///
     /// `provider` - provider of info about devices
-    pub fn create_report<T: DeviceInfoProvider>(&self, provider: &T) -> String {
+    pub fn create_report<T: DeviceInfoProvider>(&self, provider: &T) -> errors::Result<String> {
         let mut report = String::new();
 
         for r in &self.rooms {
-            for d in &r.devices {
-                report.push_str(&provider.report(&r.name, d));
+            for d in r.devices {
+                let device_report =
+                    provider
+                        .report(&r.name, d)
+                        .ok_or_else(|| DeviceNotFoundError {
+                            device_name: d.into(),
+                            room_name: r.name.clone(),
+                        })?;
+
+                report.push_str(&device_report);
                 report.push('\n');
             }
         }
 
-        report
+        Ok(report)
     }
 }
 
 /// Describes contract for provider of info about devices
 pub trait DeviceInfoProvider {
     /// Returns description of device state by room name and device name
-    fn report(&self, room_name: &str, device_name: &str) -> String;
+    /// If given device is not found, returns None
+    fn report(&self, room_name: &str, device_name: &str) -> Option<String>;
 }
 
 #[cfg(test)]
@@ -86,17 +97,18 @@ mod tests {
     fn test_get_devices_by_room_name() {
         let smart_house = SmartHouse::default();
 
-        let devices = smart_house.devices("Bathroom");
+        let devices = smart_house.devices("Bathroom").unwrap();
 
         assert_eq!(devices[0], "therm2");
         assert_eq!(devices[1], "switch1");
     }
 
     #[test]
-    #[should_panic(expected = "Room not found")]
     fn test_get_devices_panics_if_room_name_not_found() {
         let smart_house = SmartHouse::default();
 
-        let _devices = smart_house.devices("Kitchen");
+        let devices = smart_house.devices("Kitchen");
+
+        assert_eq!(devices, None);
     }
 }
