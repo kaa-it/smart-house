@@ -2,10 +2,10 @@ use smart_house::power_switch::PowerSwitch;
 use smart_house::smart_house::{DeviceInfoProvider, SmartHouse};
 use smart_house::thermometer::Thermometer;
 
-const REPORT: &str = r#"Thermometer (temperature: 0)
+const REPORT: &str = r#"Power Switch (state: Off, description: "Bathroom", power consumption: 0)
+Thermometer (temperature: 0)
 Power Switch (state: Off, description: "Dinning room", power consumption: 0)
 Thermometer (temperature: 0)
-Power Switch (state: Off, description: "Bathroom", power consumption: 0)
 "#;
 
 struct MyDeviceInfoProvider {
@@ -34,7 +34,7 @@ fn test_report() {
     let dinning_thermometer = Thermometer::default();
     let bathroom_thermometer = Thermometer::default();
 
-    let smart_house = SmartHouse::default();
+    let smart_house = SmartHouse::generate();
 
     let info_provider = MyDeviceInfoProvider {
         switch1: dinning_power_switch,

@@ -47,7 +47,7 @@ fn main() -> errors::Result<()> {
     let dinning_thermometer = Thermometer::default();
     let bathroom_thermometer = Thermometer::default();
 
-    let smart_house = SmartHouse::default();
+    let smart_house = SmartHouse::generate();
 
     let info_provider1 = OwningDeviceInfoProvider {
         switch1: dinning_power_switch.clone(),
