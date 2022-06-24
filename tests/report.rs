@@ -16,16 +16,13 @@ struct MyDeviceInfoProvider {
 }
 
 impl DeviceInfoProvider for MyDeviceInfoProvider {
-    fn report(&self, room_name: &str, device_name: &str) -> String {
+    fn report(&self, room_name: &str, device_name: &str) -> Option<String> {
         match (room_name, device_name) {
-            ("Dinning room", "therm1") => format!("{}", self.thermometer1),
-            ("Dinning room", "switch1") => format!("{}", self.switch1),
-            ("Bathroom", "therm2") => format!("{}", self.thermometer2),
-            ("Bathroom", "switch1") => format!("{}", self.switch2),
-            (_, _) => format!(
-                "Not found device \"{}\" in room \"{}\"",
-                device_name, room_name
-            ),
+            ("Dinning room", "therm1") => Some(format!("{}", self.thermometer1)),
+            ("Dinning room", "switch1") => Some(format!("{}", self.switch1)),
+            ("Bathroom", "therm2") => Some(format!("{}", self.thermometer2)),
+            ("Bathroom", "switch1") => Some(format!("{}", self.switch2)),
+            (_, _) => None,
         }
     }
 }
@@ -46,7 +43,7 @@ fn test_report() {
         thermometer2: bathroom_thermometer,
     };
 
-    let report = smart_house.create_report(&info_provider);
+    let report = smart_house.create_report(&info_provider).unwrap();
 
     assert_eq!(report, REPORT);
 }
