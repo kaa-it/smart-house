@@ -22,14 +22,14 @@ impl DeviceInfoProvider for OwningDeviceInfoProvider {
     }
 }
 
-struct BorrowingDeviceInfoProvider<'a, 'b, 'c, 'd> {
+struct BorrowingDeviceInfoProvider<'a> {
     switch1: &'a PowerSwitch,
-    switch2: &'b PowerSwitch,
-    thermometer1: &'c Thermometer,
-    thermometer2: &'d Thermometer,
+    switch2: &'a PowerSwitch,
+    thermometer1: &'a Thermometer,
+    thermometer2: &'a Thermometer,
 }
 
-impl<'a, 'b, 'c, 'd> DeviceInfoProvider for BorrowingDeviceInfoProvider<'a, 'b, 'c, 'd> {
+impl<'a> DeviceInfoProvider for BorrowingDeviceInfoProvider<'a> {
     fn report(&self, room_name: &str, device_name: &str) -> Option<String> {
         match (room_name, device_name) {
             ("Dinning room", "therm1") => Some(format!("{}", self.thermometer1)),
