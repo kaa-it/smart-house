@@ -1,60 +1,94 @@
 //! Module describes smart house
 
+use std::collections::BTreeMap;
+
 use crate::errors::{self, Error::DeviceNotFoundError};
 
-/// Describes list of devices in the room
-pub type DeviceList<'a> = [&'a str; 2];
+use self::room::{DeviceList, Room};
+
+mod room;
 
 /// Describes list of rooms in the smart house
-pub type RoomList<'a> = [Room<'a>; 2];
-
-/// Describes room of the smart house
-#[derive(Debug)]
-pub struct Room<'a> {
-    name: String,
-    devices: DeviceList<'a>,
-}
-
+pub type RoomList = BTreeMap<String, Room>;
 /// Describes smart house
-pub struct SmartHouse<'a> {
-    _name: String,
-    rooms: RoomList<'a>,
+pub struct SmartHouse {
+    name: String,
+    rooms: RoomList,
 }
 
-impl<'a> Default for SmartHouse<'a> {
-    /// Create default smart house
-    fn default() -> Self {
+impl SmartHouse {
+    /// Creates new empty house with given name
+    pub fn new(name: &str) -> Self {
         Self {
-            _name: String::from("Our house"),
-            rooms: [
-                Room {
-                    name: String::from("Dinning room"),
-                    devices: ["therm1", "switch1"],
-                },
-                Room {
-                    name: String::from("Bathroom"),
-                    devices: ["therm2", "switch1"],
-                },
-            ],
+            name: String::from(name),
+            rooms: BTreeMap::new(),
         }
     }
-}
 
-impl<'a> SmartHouse<'a> {
+    /// Generates small house
+    pub fn generate() -> Self {
+        let mut house = Self::new("Our house");
+
+        let mut dinning_room = Room::new("Dinning room");
+        dinning_room.add_device("therm1");
+        dinning_room.add_device("switch1");
+
+        let mut bathroom = Room::new("Bathroom");
+        bathroom.add_device("therm2");
+        bathroom.add_device("switch1");
+
+        house.add_room(dinning_room);
+        house.add_room(bathroom);
+
+        house
+    }
+
+    /// Returns name of the smart house
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    /// Sets name to the smart house
+    pub fn set_name(&mut self, name: &str) {
+        self.name = name.to_owned();
+    }
+
     /// Returns list of rooms for the smart house
     pub fn get_rooms(&self) -> &RoomList {
         &self.rooms
     }
 
-    /// Returns names of devices for the room of smart house by room's name
-    pub fn devices(&self, room_name: &str) -> Option<DeviceList> {
-        for r in &self.rooms {
-            if r.name == room_name {
-                return Some(r.devices);
-            }
+    /// Adds room to the smart house.
+    /// Returns `true` if room was added,
+    /// returns `false` otherwise.
+    pub fn add_room(&mut self, room: Room) -> bool {
+        if self.rooms.contains_key(room.get_name()) {
+            return false;
         }
 
-        None
+        _ = self.rooms.insert(room.get_name().to_owned(), room);
+
+        true
+    }
+
+    /// Removes room from the smart house.
+    /// Returns `true` if room was removed,
+    /// returns `false` otherwise.
+    pub fn remove_room(&mut self, room_name: &str) -> bool {
+        if !self.rooms.contains_key(room_name) {
+            return false;
+        }
+
+        _ = self.rooms.remove(room_name);
+
+        true
+    }
+
+    /// Returns names of devices for the room of smart house by room's name
+    pub fn devices(&self, room_name: &str) -> Option<&DeviceList> {
+        self.rooms
+            .get(&room_name.to_owned())
+            .map(|r| r.get_devices())
     }
 
     /// Returns report about devices of the smart house
@@ -63,14 +97,14 @@ impl<'a> SmartHouse<'a> {
     pub fn create_report<T: DeviceInfoProvider>(&self, provider: &T) -> errors::Result<String> {
         let mut report = String::new();
 
-        for r in &self.rooms {
-            for d in r.devices {
+        for r in self.rooms.values() {
+            for d in r.get_devices() {
                 let device_report =
                     provider
-                        .report(&r.name, d)
+                        .report(r.get_name(), d)
                         .ok_or_else(|| DeviceNotFoundError {
-                            device_name: d.into(),
-                            room_name: r.name.clone(),
+                            device_name: d.clone(),
+                            room_name: r.get_name().to_owned(),
                         })?;
 
                 report.push_str(&device_report);
@@ -95,17 +129,17 @@ mod tests {
 
     #[test]
     fn test_get_devices_by_room_name() {
-        let smart_house = SmartHouse::default();
+        let smart_house = SmartHouse::generate();
 
         let devices = smart_house.devices("Bathroom").unwrap();
 
-        assert_eq!(devices[0], "therm2");
-        assert_eq!(devices[1], "switch1");
+        assert!(devices.contains("therm2"));
+        assert!(devices.contains("switch1"));
     }
 
     #[test]
     fn test_get_devices_panics_if_room_name_not_found() {
-        let smart_house = SmartHouse::default();
+        let smart_house = SmartHouse::generate();
 
         let devices = smart_house.devices("Kitchen");
 
