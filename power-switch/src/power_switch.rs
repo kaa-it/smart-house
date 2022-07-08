@@ -1,5 +1,7 @@
 //! Module describes power switch device for smart house
 
+use crate::command::Command;
+use crate::response::Response;
 use std::fmt::{self, Display};
 
 /// Describes state of power switch
@@ -7,6 +9,18 @@ use std::fmt::{self, Display};
 pub enum SwitchState {
     On,
     Off,
+}
+
+impl TryFrom<u8> for SwitchState {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(SwitchState::Off),
+            1 => Ok(SwitchState::On),
+            _ => Err("Failed to convert value to SwitchState"),
+        }
+    }
 }
 
 /// Describes smart power switch
@@ -27,6 +41,15 @@ impl PowerSwitch {
         }
     }
 
+    /// Creates new switch with full setting
+    pub fn from_settings(description: &str, state: SwitchState, power_consumption: f64) -> Self {
+        Self {
+            state,
+            description: String::from(description),
+            power_consumption,
+        }
+    }
+
     /// Returns description of the switch
     pub fn description(&self) -> &str {
         &self.description
@@ -40,6 +63,32 @@ impl PowerSwitch {
     /// Returns current power consumption of the switch
     pub fn power_consumption(&self) -> f64 {
         self.power_consumption
+    }
+
+    /// Process commands for the switch
+    pub fn process_command(&mut self, command: Command) -> Response {
+        match command {
+            Command::TurnOn => {
+                self.state = SwitchState::On;
+                Response::Ok
+            }
+            Command::TurnOff => {
+                self.state = SwitchState::Off;
+                Response::Ok
+            }
+            Command::IsEnabled => match self.state {
+                SwitchState::On => Response::Enabled,
+                SwitchState::Off => Response::Disabled,
+            },
+            Command::GetPower => match self.state {
+                SwitchState::On => Response::Power(self.power_consumption),
+                SwitchState::Off => Response::Power(0.0),
+            },
+            Command::Unknown => {
+                println!("Unknown command received");
+                Response::Unknown
+            }
+        }
     }
 }
 
