@@ -1,7 +1,12 @@
-use smart_house::errors;
-use smart_house::power_switch::PowerSwitch;
+use power_switch::power_switch::PowerSwitch;
 use smart_house::smart_house::{DeviceInfoProvider, SmartHouse};
 use smart_house::thermometer::Thermometer;
+
+const REPORT: &str = r#"Power Switch (state: Off, description: "Bathroom", power consumption: 0)
+Thermometer (temperature: 0)
+Power Switch (state: Off, description: "Dinning room", power consumption: 0)
+Thermometer (temperature: 0)
+"#;
 
 struct MyDeviceInfoProvider {
     switch1: PowerSwitch,
@@ -22,7 +27,8 @@ impl DeviceInfoProvider for MyDeviceInfoProvider {
     }
 }
 
-fn main() -> errors::Result<()> {
+#[test]
+fn test_report() {
     let dinning_power_switch = PowerSwitch::new("Dinning room");
     let bathroom_power_switch = PowerSwitch::new("Bathroom");
     let dinning_thermometer = Thermometer::default();
@@ -37,9 +43,7 @@ fn main() -> errors::Result<()> {
         thermometer2: bathroom_thermometer,
     };
 
-    let report = smart_house.create_report(&info_provider)?;
+    let report = smart_house.create_report(&info_provider).unwrap();
 
-    println!("Report: \n{}", report);
-
-    Ok(())
+    assert_eq!(report, REPORT);
 }

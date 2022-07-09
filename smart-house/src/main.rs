@@ -1,5 +1,5 @@
+use power_switch::power_switch::PowerSwitch;
 use smart_house::errors;
-use smart_house::power_switch::PowerSwitch;
 use smart_house::smart_house::{DeviceInfoProvider, SmartHouse};
 use smart_house::thermometer::Thermometer;
 
