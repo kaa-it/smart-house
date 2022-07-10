@@ -3,7 +3,7 @@
 use std::{
     error::Error,
     fmt,
-    net::{ToSocketAddrs, UdpSocket},
+    net::{SocketAddr, UdpSocket},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -20,7 +20,10 @@ pub struct Thermometer {
 
 impl Thermometer {
     /// Creates new thermometer which receives data at given `recevier`
-    pub fn new(receiver: impl ToSocketAddrs) -> Result<Self, Box<dyn Error>> {
+    pub fn new(receiver: &str, sender: &str) -> Result<Self, Box<dyn Error>> {
+        let receiver = receiver.parse::<SocketAddr>()?;
+        let sender = sender.parse::<SocketAddr>()?;
+
         let socket = UdpSocket::bind(receiver)?;
         socket.set_read_timeout(Some(Duration::from_secs(3)))?;
 
@@ -30,18 +33,24 @@ impl Thermometer {
         let temperature_clone = temperature.clone();
         let stop_clone = stop.clone();
 
-        thread::spawn(move || loop {
-            if stop_clone.load(Ordering::SeqCst) {
-                return;
-            }
+        thread::spawn(move || {
+            let socket = socket;
+            loop {
+                if stop_clone.load(Ordering::SeqCst) {
+                    return;
+                }
 
-            let mut buf = [0; 8];
-            if let Err(err) = socket.recv_from(&mut buf) {
-                println!("Failed to receive temperature from sender: {err}");
-            }
+                let val = match Self::recv_temperature(&socket, &sender, stop_clone.clone()) {
+                    Err(err) => {
+                        println!("Failed to receive temperature from sender: {err}");
+                        0.0
+                    }
+                    Ok(None) => return,
+                    Ok(Some(val)) => val,
+                };
 
-            let val = f64::from_be_bytes(buf);
-            *temperature_clone.lock().unwrap() = val;
+                *temperature_clone.lock().unwrap() = val;
+            }
         });
 
         Ok(Self { temperature, stop })
@@ -50,6 +59,35 @@ impl Thermometer {
     /// Returns current temperature of the thermometer
     pub fn temperature(&self) -> f64 {
         *self.temperature.lock().unwrap()
+    }
+
+    fn recv_temperature(
+        socket: &UdpSocket,
+        sender: &SocketAddr,
+        stop: Arc<AtomicBool>,
+    ) -> Result<Option<f64>, Box<dyn Error>> {
+        let mut buf = [0; 8];
+        let mut recv_buf = [0; 8];
+        let mut recv_count = 0;
+
+        while recv_count < 8 {
+            if stop.load(Ordering::SeqCst) {
+                return Ok(None);
+            }
+
+            let (bytes_received, src_addr) = socket.recv_from(&mut recv_buf)?;
+
+            if src_addr != *sender {
+                continue;
+            }
+
+            buf[recv_count..recv_count + bytes_received]
+                .copy_from_slice(&recv_buf[0..bytes_received]);
+
+            recv_count += bytes_received;
+        }
+
+        Ok(Some(f64::from_be_bytes(buf)))
     }
 }
 

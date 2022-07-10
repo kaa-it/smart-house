@@ -20,5 +20,5 @@ run_sender:
 	cargo run --package thermometer --bin sender -- -r "127.0.0.1:4444" -b "127.0.0.1:3333"
 
 run_receiver:
-	cargo run --package thermometer --bin receiver -- -r "127.0.0.1:4444"
+	cargo run --package thermometer --bin receiver -- -r "127.0.0.1:4444" -s "127.0.0.1:3333"
 

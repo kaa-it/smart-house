@@ -1,4 +1,5 @@
 use std::{
+    error::Error,
     net::{SocketAddr, UdpSocket},
     thread,
     time::{Duration, Instant},
@@ -43,16 +44,36 @@ fn main() {
 
     loop {
         let temperature = temperature_generator.generate();
-        let bytes = temperature.to_be_bytes();
-        let res = socket.send_to(&bytes, receiver);
-        println!("Temperature: {temperature}");
+
+        let res = send_temperature(&socket, &receiver, temperature);
 
         if let Err(e) = res {
             println!("Failed to send temperature: {e}");
         }
 
+        println!("Temperature: {temperature}");
+
         thread::sleep(Duration::from_millis(1500));
     }
+}
+
+fn send_temperature(
+    socket: &UdpSocket,
+    receiver: &SocketAddr,
+    temperature: f64,
+) -> Result<(), Box<dyn Error>> {
+    let bytes = temperature.to_be_bytes();
+    let mut sent_count = 0;
+
+    while sent_count < 8 {
+        let sent_bytes = socket.send_to(&bytes[sent_count..], receiver)?;
+
+        println!("Sended");
+
+        sent_count += sent_bytes;
+    }
+
+    Ok(())
 }
 
 /// Describes temperature generator for
