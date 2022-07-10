@@ -1,2 +1,2 @@
 [workspace]
-members = ["smart-house", "power-switch"]
+members = ["smart-house", "power-switch", "thermometer"]

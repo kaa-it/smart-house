@@ -16,3 +16,9 @@ run_server:
 run_client:
 	cargo run --package power-switch --bin client -- -a "127.0.0.1:53453"
 
+run_sender:
+	cargo run --package thermometer --bin sender -- -r "127.0.0.1:4444" -b "127.0.0.1:3333"
+
+run_receiver:
+	cargo run --package thermometer --bin receiver -- -r "127.0.0.1:4444"
+

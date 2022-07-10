@@ -1,6 +1,6 @@
 use power_switch::power_switch::PowerSwitch;
 use smart_house::smart_house::{DeviceInfoProvider, SmartHouse};
-use smart_house::thermometer::Thermometer;
+use thermometer::thermometer::Thermometer;
 
 const REPORT: &str = r#"Power Switch (state: Off, description: "Bathroom", power consumption: 0)
 Thermometer (temperature: 0)
@@ -31,8 +31,8 @@ impl DeviceInfoProvider for MyDeviceInfoProvider {
 fn test_report() {
     let dinning_power_switch = PowerSwitch::new("Dinning room");
     let bathroom_power_switch = PowerSwitch::new("Bathroom");
-    let dinning_thermometer = Thermometer::default();
-    let bathroom_thermometer = Thermometer::default();
+    let dinning_thermometer = Thermometer::new("127.0.0.1:6876").unwrap();
+    let bathroom_thermometer = Thermometer::new("127.0.0.1:7888").unwrap();
 
     let smart_house = SmartHouse::generate();
 
