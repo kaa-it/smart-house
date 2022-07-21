@@ -26,7 +26,8 @@ struct Args {
     power_consumption: f64,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let power_switch = PowerSwitch::from_settings(
@@ -37,9 +38,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("{power_switch}");
 
-    let server = Server::new(args.address, power_switch)?;
+    let server = Server::new(args.address, power_switch).await?;
 
-    server.run()?;
+    server.run().await?;
 
     Ok(())
 }
