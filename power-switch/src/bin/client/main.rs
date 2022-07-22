@@ -14,11 +14,11 @@ struct Args {
     #[clap(short, long, value_parser)]
     address: String,
 }
-
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let mut client = Client::new(args.address)?;
+    let mut client = Client::new(args.address).await?;
 
     loop {
         show_menu();
@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let input = read_input();
 
         let response = match input {
-            Some(command) => client.run_command(command)?,
+            Some(command) => client.run_command(command).await?,
             None => {
                 println!("Bye...");
                 break;
