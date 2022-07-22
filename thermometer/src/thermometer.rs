@@ -3,29 +3,28 @@
 use std::{
     error::Error,
     fmt,
-    net::{SocketAddr, UdpSocket},
+    net::SocketAddr,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
     },
-    thread,
-    time::Duration,
 };
+use tokio::{net::UdpSocket, task::JoinHandle, time};
 /// Describes smart thermometer
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Thermometer {
     temperature: Arc<Mutex<f64>>,
     stop: Arc<AtomicBool>,
+    jh: Option<JoinHandle<()>>,
 }
 
 impl Thermometer {
     /// Creates new thermometer which receives data at given `recevier`
-    pub fn new(receiver: &str, sender: &str) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(receiver: &str, sender: &str) -> Result<Self, Box<dyn Error>> {
         let receiver = receiver.parse::<SocketAddr>()?;
         let sender = sender.parse::<SocketAddr>()?;
 
-        let socket = UdpSocket::bind(receiver)?;
-        socket.set_read_timeout(Some(Duration::from_secs(3)))?;
+        let socket = UdpSocket::bind(receiver).await?;
 
         let stop = Arc::new(AtomicBool::new(false));
         let temperature = Arc::new(Mutex::new(0.0));
@@ -33,14 +32,14 @@ impl Thermometer {
         let temperature_clone = temperature.clone();
         let stop_clone = stop.clone();
 
-        thread::spawn(move || {
+        let jh = tokio::spawn(async move {
             let socket = socket;
             loop {
                 if stop_clone.load(Ordering::SeqCst) {
                     return;
                 }
 
-                let val = match Self::recv_temperature(&socket, &sender, stop_clone.clone()) {
+                let val = match Self::recv_temperature(&socket, &sender, stop_clone.clone()).await {
                     Err(err) => {
                         println!("Failed to receive temperature from sender: {err}");
                         0.0
@@ -53,7 +52,11 @@ impl Thermometer {
             }
         });
 
-        Ok(Self { temperature, stop })
+        Ok(Self {
+            temperature,
+            stop,
+            jh: Some(jh),
+        })
     }
 
     /// Returns current temperature of the thermometer
@@ -61,7 +64,7 @@ impl Thermometer {
         *self.temperature.lock().unwrap()
     }
 
-    fn recv_temperature(
+    async fn recv_temperature(
         socket: &UdpSocket,
         sender: &SocketAddr,
         stop: Arc<AtomicBool>,
@@ -75,7 +78,16 @@ impl Thermometer {
                 return Ok(None);
             }
 
-            let (bytes_received, src_addr) = socket.recv_from(&mut recv_buf)?;
+            let (bytes_received, src_addr) = tokio::select! {
+                resp = socket.recv_from(&mut recv_buf) => {
+                    let (b, s) = resp?;
+                    (b, s)
+                },
+
+                _ = time::sleep(time::Duration::from_secs(5)) => {
+                    return Ok(None)
+                }
+            };
 
             if src_addr != *sender {
                 continue;
@@ -100,5 +112,9 @@ impl fmt::Display for Thermometer {
 impl Drop for Thermometer {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::SeqCst);
+
+        let jh = self.jh.take().unwrap();
+
+        _ = futures::executor::block_on(jh);
     }
 }

@@ -1,8 +1,8 @@
 use power_switch::command::Command;
 use power_switch::response::Response;
 use std::error::Error;
-use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpStream, ToSocketAddrs};
 
 pub struct Client {
     stream: TcpStream,

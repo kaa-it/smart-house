@@ -41,19 +41,30 @@ impl<'a> DeviceInfoProvider for BorrowingDeviceInfoProvider<'a> {
     }
 }
 
-fn main() -> errors::Result<()> {
+#[tokio::main]
+async fn main() -> errors::Result<()> {
     let dinning_power_switch = PowerSwitch::new("Dinning room");
     let bathroom_power_switch = PowerSwitch::new("Bathroom");
-    let dinning_thermometer = Thermometer::new("127.0.0.1:6876", "127.0.0.1:6877").unwrap();
-    let bathroom_thermometer = Thermometer::new("127.0.0.1:7888", "127.0.0.1:7889").unwrap();
+    let dinning_thermometer = Thermometer::new("127.0.0.1:6876", "127.0.0.1:6877")
+        .await
+        .unwrap();
+    let bathroom_thermometer = Thermometer::new("127.0.0.1:7888", "127.0.0.1:7889")
+        .await
+        .unwrap();
+    let dinning_thermometer2 = Thermometer::new("127.0.0.1:6878", "127.0.0.1:6879")
+        .await
+        .unwrap();
+    let bathroom_thermometer2 = Thermometer::new("127.0.0.1:7889", "127.0.0.1:7890")
+        .await
+        .unwrap();
 
     let smart_house = SmartHouse::generate();
 
     let info_provider1 = OwningDeviceInfoProvider {
         switch1: dinning_power_switch.clone(),
         switch2: bathroom_power_switch.clone(),
-        thermometer1: dinning_thermometer.clone(),
-        thermometer2: bathroom_thermometer.clone(),
+        thermometer1: dinning_thermometer,
+        thermometer2: bathroom_thermometer,
     };
 
     let report1 = smart_house.create_report(&info_provider1)?;
@@ -61,8 +72,8 @@ fn main() -> errors::Result<()> {
     let info_provider2 = BorrowingDeviceInfoProvider {
         switch1: &dinning_power_switch,
         switch2: &bathroom_power_switch,
-        thermometer1: &dinning_thermometer,
-        thermometer2: &bathroom_thermometer,
+        thermometer1: &dinning_thermometer2,
+        thermometer2: &bathroom_thermometer2,
     };
 
     let report2 = smart_house.create_report(&info_provider2)?;

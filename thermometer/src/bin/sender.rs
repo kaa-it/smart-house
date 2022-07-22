@@ -1,9 +1,11 @@
 use std::{
     error::Error,
-    net::{SocketAddr, UdpSocket},
-    thread,
+    net::SocketAddr,
     time::{Duration, Instant},
 };
+
+use tokio::net::UdpSocket;
+use tokio::time::sleep;
 
 use clap::Parser;
 
@@ -20,7 +22,8 @@ struct Args {
     bind: String,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
 
     println!("Receiver address: {}", args.receiver);
@@ -36,7 +39,7 @@ fn main() {
         .parse::<SocketAddr>()
         .expect("Failed to parse address for binding");
 
-    let socket = UdpSocket::bind(bind).expect("Failed to bind socket");
+    let socket = UdpSocket::bind(bind).await.expect("Failed to bind socket");
 
     let temperature_generator = TemperatureGenerator::new(30.0, 5.0);
 
@@ -45,7 +48,7 @@ fn main() {
     loop {
         let temperature = temperature_generator.generate();
 
-        let res = send_temperature(&socket, &receiver, temperature);
+        let res = send_temperature(&socket, &receiver, temperature).await;
 
         if let Err(e) = res {
             println!("Failed to send temperature: {e}");
@@ -53,11 +56,11 @@ fn main() {
 
         println!("Temperature: {temperature}");
 
-        thread::sleep(Duration::from_millis(1500));
+        sleep(Duration::from_millis(1500)).await;
     }
 }
 
-fn send_temperature(
+async fn send_temperature(
     socket: &UdpSocket,
     receiver: &SocketAddr,
     temperature: f64,
@@ -66,7 +69,7 @@ fn send_temperature(
     let mut sent_count = 0;
 
     while sent_count < 8 {
-        let sent_bytes = socket.send_to(&bytes[sent_count..], receiver)?;
+        let sent_bytes = socket.send_to(&bytes[sent_count..], receiver).await?;
 
         println!("Sended");
 

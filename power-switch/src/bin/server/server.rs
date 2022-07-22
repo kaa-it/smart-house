@@ -1,7 +1,7 @@
 use power_switch::power_switch::PowerSwitch;
-use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use std::sync::{Arc, Mutex};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
 
 pub struct Server {
     tcp: TcpListener,
@@ -9,8 +9,13 @@ pub struct Server {
 }
 
 impl Server {
-    pub async fn new(addrs: impl ToSocketAddrs, power_switch: PowerSwitch) -> Result<Self, &'static str> {
-        let tcp = TcpListener::bind(addrs).await.map_err(|_| "Failed to bind tcp listener")?;
+    pub async fn new(
+        addrs: impl ToSocketAddrs,
+        power_switch: PowerSwitch,
+    ) -> Result<Self, &'static str> {
+        let tcp = TcpListener::bind(addrs)
+            .await
+            .map_err(|_| "Failed to bind tcp listener")?;
         Ok(Self {
             tcp,
             power_switch: Arc::new(Mutex::new(power_switch)),

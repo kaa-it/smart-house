@@ -1,7 +1,8 @@
-use std::{thread, time::Duration};
+use std::time::Duration;
 
 use clap::Parser;
 use thermometer::thermometer::Thermometer;
+use tokio::time::sleep;
 
 /// Sender program for imitating the thermometer
 #[derive(Parser, Debug)]
@@ -16,12 +17,15 @@ struct Args {
     sender: String,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
 
-    let thermometer = Thermometer::new(&args.receiver, &args.sender).unwrap();
+    let thermometer = Thermometer::new(&args.receiver, &args.sender)
+        .await
+        .unwrap();
     for _ in 0..88 {
-        thread::sleep(Duration::from_secs(2));
+        sleep(Duration::from_secs(2)).await;
         let temperature = thermometer.temperature();
         println!("The temperature is {temperature}");
     }
